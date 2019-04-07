@@ -1,0 +1,2 @@
+# Don't bake the admin plugin into the released version
+grav/user/plugins/admin
