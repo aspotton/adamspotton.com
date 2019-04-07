@@ -1,0 +1,5 @@
+grav/backup/**
+grav/cache/*
+grav/logs/**
+grav/images/*
+grav/user/accounts/**

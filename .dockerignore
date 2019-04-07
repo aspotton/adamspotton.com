@@ -1,2 +1,7 @@
 # Don't bake the admin plugin into the released version
 grav/user/plugins/admin
+grav/user/plugins/login
+
+grav/backup/*
+grav/cache/*
+grav/images/*
