@@ -3,16 +3,12 @@ title: About
 route: about
 ---
 
-![About Image](about.jpeg?cropResize=400,200){.left} Nulla vitae elit libero, a pharetra augue. Donec sed odio dui. Donec ullamcorper nulla non metus auctor fringilla. Curabitur blandit tempus porttitor. Curabitur blandit tempus porttitor. Duis mollis, est non commodo luctus, nisi erat porttitor ligula, eget lacinia odio sem nec elit.
+![About Image](headshot.png?cropResize=400,200){.left .img-polaroid} My name is Adam Spotton and I live on Long Island, NY. I’m the founder of <a href="https://www.webshrinker.com/" target="_blank" rel="noopener nofollow" aria-label="My name is Adam Spotton and I live on Long Island, NY. I’m the founder of Web Shrinker which was acquired and merged into DNSFilter back in March 2018, where I’m the Director of Data Science and continue to work on and expand the Web Shrinker AI + machine learning services. (opens in a new tab)">Web Shrinker</a> which was acquired and merged into DNSFilter back in March 2018, where I’m the Director of Data Science and continue to work on and expand the Web Shrinker AI + machine learning services.
 
-Morbi leo risus, porta ac consectetur ac, vestibulum at eros. Integer posuere erat a ante venenatis dapibus posuere velit aliquet. Cras justo odio, dapibus ac facilisis in, egestas eget quam. Morbi leo risus, porta ac consectetur ac, vestibulum at eros.
+My main areas of professional interest are software engineering, entrepreneurship, linux, big data, artificial intelligence, and machine learning.
 
-Cras mattis consectetur purus sit amet fermentum. Etiam porta sem malesuada magna mollis euismod. Praesent commodo cursus magna, vel scelerisque nisl consectetur et. Sed posuere consectetur est at lobortis. Nulla vitae elit libero, a pharetra augue.
-
-Morbi leo risus, porta ac consectetur ac, vestibulum at eros. Integer posuere erat a ante venenatis dapibus posuere velit aliquet. Cras justo odio, dapibus ac facilisis in, egestas eget quam. Morbi leo risus, porta ac consectetur ac, vestibulum at eros.
-
->Morbi leo risus, porta ac consectetur ac, vestibulum at eros. Integer posuere erat a ante venenatis dapibus posuere velit aliquet. Cras justo odio, dapibus ac facilisis in, egestas eget quam. Morbi leo risus, porta ac consectetur ac, vestibulum at eros.
-
-<br />
-
-[Button](https://www.google.com) {.btn}
+<blockquote style="text-align:center">
+	<p>
+	I’m passionate about quality software development that is scalable and robust.
+	</p>
+</blockquote>
