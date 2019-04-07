@@ -1,17 +1,17 @@
-title: Saturn
-intro: Hello, I’m Saturn. I’m proud to be a part of milky way
+title: Adam Spotton
+intro: Random musings about software engineering, data science, linux, and other stuff.
 
 # Avatar must be uploaded to theme "img" folder.
 intro_avatar: avatar.png
 author:
-  name: Afnizar Nur Ghifari
-  email: 'test@test.com'
-  footer: handcrafted by @flamekaizar
-  footer2: Ported by TeamGrav
-  url: http://afnizar.com
-  url2: http://getgrav.org
+  name: Adam Spotton
+  email: 
+  footer: © 2019 Adam Spotton. All rights reserved.
+  footer2: 
+  url: 
+  url2: 
 metadata:
-    description: 'Saturn is free GRAV theme by @flamekaizar, ported by Team Grav.'
+    description: 'Random musings about software engineering, data science, linux, and other stuff.'
 
 # Main Menu
 menu:
@@ -19,11 +19,9 @@ menu:
     link: "#" 
 
 social: 
-  - icon: send
-    link: "mailto:afnizarhilmi@gmail.com" 
+  - icon: github
+    link: "https://github.com/aspotton/"
+  - icon: linkedin
+    link: "https://www.linkedin.com/in/adamspotton/"
   - icon: twitter
-    link: "http://twitter.com/flamekaizar" 
-  - icon: dribbble
-    link: "http://dribbble.com/flamekaizar"  
-  - icon: behance
-    link: "http://behance.com/flamekaizar"    
+    link: "https://twitter.com/AdamSpotton"
