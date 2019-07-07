@@ -13,6 +13,7 @@ use Grav\Common\Helpers\Truncator;
 use Grav\Common\Page\Interfaces\PageInterface;
 use Grav\Common\Markdown\Parsedown;
 use Grav\Common\Markdown\ParsedownExtra;
+use Grav\Common\Page\Markdown\Excerpts;
 use RocketTheme\Toolbox\Event\Event;
 use RocketTheme\Toolbox\ResourceLocator\UniformResourceLocator;
 
@@ -29,19 +30,24 @@ abstract class Utils
      *
      * @param string $input
      * @param bool $domain
+     * @param bool $fail_gracefully
      * @return bool|null|string
      */
-    public static function url($input, $domain = false)
+    public static function url($input, $domain = false, $fail_gracefully = false)
     {
-        if (!trim((string)$input)) {
-            $input = '/';
+        if ((!is_string($input) && !method_exists($input, '__toString')) || !trim($input)) {
+            if ($fail_gracefully) {
+                $input = '/';
+            } else {
+                return false;
+            }
         }
 
         if (Grav::instance()['config']->get('system.absolute_urls', false)) {
             $domain = true;
         }
 
-        if (Grav::instance()['uri']->isExternal($input)) {
+        if (Uri::isExternal($input)) {
             return $input;
         }
 
@@ -56,13 +62,20 @@ abstract class Utils
         if (Utils::contains((string)$input, '://')) {
             /** @var UniformResourceLocator $locator */
             $locator = Grav::instance()['locator'];
-
             $parts = Uri::parseUrl($input);
 
             if ($parts) {
-                $resource = $locator->findResource("{$parts['scheme']}://{$parts['host']}{$parts['path']}", false);
+                try {
+                    $resource = $locator->findResource("{$parts['scheme']}://{$parts['host']}{$parts['path']}", false);
+                } catch (\Exception $e) {
+                    if ($fail_gracefully) {
+                        return $input;
+                    } else {
+                        return false;
+                    }
+                }
 
-                if (isset($parts['query'])) {
+                if ($resource && isset($parts['query'])) {
                     $resource = $resource . '?' . $parts['query'];
                 }
             } else {
@@ -70,12 +83,13 @@ abstract class Utils
                 $resource = $locator->findResource($input, false);
             }
 
-
         } else {
             $resource = $input;
         }
 
-
+        if (!$fail_gracefully && $resource === false) {
+            return false;
+        }
 
         return rtrim($uri->rootUrl($domain), '/') . '/' . ($resource ?? '');
     }
@@ -974,17 +988,19 @@ abstract class Utils
      *
      * @param string $string The path
      *
-     * @return bool
+     * @return bool|string Either false or the language
+     *
      */
     public static function pathPrefixedByLangCode($string)
     {
-        if (strlen($string) <= 3) {
-            return false;
+        $languages_enabled = Grav::instance()['config']->get('system.languages.supported', []);
+        $parts = explode('/', trim($string, '/'));
+
+        if (count($parts) > 0 && in_array($parts[0], $languages_enabled)) {
+            return $parts[0];
         }
 
-        $languages_enabled = Grav::instance()['config']->get('system.languages.supported', []);
-
-        return $string[0] === '/' && $string[3] === '/' && \in_array(substr($string, 1, 2), $languages_enabled, true);
+        return false;
     }
 
     /**
@@ -1341,6 +1357,8 @@ abstract class Utils
             $post_max_size = static::parseSize(ini_get('post_max_size'));
             if ($post_max_size > 0) {
                 $max_size = $post_max_size;
+            } else {
+                $max_size = 0;
             }
 
             $upload_max = static::parseSize(ini_get('upload_max_filesize'));
@@ -1388,7 +1406,7 @@ abstract class Utils
         $pow = min($pow, count($units) - 1);
 
         // Uncomment one of the following alternatives
-         $bytes /= pow(1024, $pow);
+        $bytes /= 1024 ** $pow;
         // $bytes /= (1 << (10 * $pow));
 
         return round($bytes, $precision) . ' ' . $units[$pow];
@@ -1404,11 +1422,12 @@ abstract class Utils
     {
         $unit = preg_replace('/[^bkmgtpezy]/i', '', $size);
         $size = preg_replace('/[^0-9\.]/', '', $size);
+
         if ($unit) {
-            return round($size * pow(1024, stripos('bkmgtpezy', $unit[0])));
-        } else {
-            return round($size);
+            $size = $size * pow(1024, stripos('bkmgtpezy', $unit[0]));
         }
+
+        return (int) abs(round($size));
     }
 
     /**
@@ -1451,14 +1470,21 @@ abstract class Utils
      */
     public static function processMarkdown($string, $block = true)
     {
-        $page     = Grav::instance()['page'] ?? null;
-        $defaults = Grav::instance()['config']->get('system.pages.markdown');
+        $grav = Grav::instance();
+        $page     = $grav['page'] ?? null;
+        $defaults = [
+            'markdown' => $grav['config']->get('system.pages.markdown', []),
+            'images' => $grav['config']->get('system.images', [])
+        ];
+        $extra = $defaults['markdown']['extra'] ?? false;
+
+        $excerpts = new Excerpts($page, $defaults);
 
         // Initialize the preferred variant of Parsedown
-        if ($defaults['extra']) {
-            $parsedown = new ParsedownExtra($page, $defaults);
+        if ($extra) {
+            $parsedown = new ParsedownExtra($excerpts);
         } else {
-            $parsedown = new Parsedown($page, $defaults);
+            $parsedown = new Parsedown($excerpts);
         }
 
         if ($block) {
@@ -1468,5 +1494,44 @@ abstract class Utils
         }
 
         return $string;
+    }
+
+    /**
+     * Find the subnet of an ip with CIDR prefix size
+     *
+     * @param string $ip
+     * @param int $prefix
+     *
+     * @return string
+     */
+    public static function getSubnet($ip, $prefix = 64)
+    {
+        if (!filter_var($ip, FILTER_VALIDATE_IP)) {
+            return $ip;
+        }
+
+        // Packed representation of IP
+        $ip = inet_pton($ip);
+
+        // Maximum netmask length = same as packed address
+        $len = 8*strlen($ip);
+        if ($prefix > $len) $prefix = $len;
+
+        $mask  = str_repeat('f', $prefix>>2);
+
+        switch($prefix & 3)
+        {
+            case 3: $mask .= 'e'; break;
+            case 2: $mask .= 'c'; break;
+            case 1: $mask .= '8'; break;
+        }
+        $mask = str_pad($mask, $len>>2, '0');
+
+        // Packed representation of netmask
+        $mask = pack('H*', $mask);
+        // Bitwise - Take all bits that are both 1 to generate subnet
+        $subnet = inet_ntop($ip & $mask);
+
+        return $subnet;
     }
 }

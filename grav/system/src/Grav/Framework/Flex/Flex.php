@@ -91,7 +91,7 @@ class Flex implements \Countable
         // Return the directories in the given order.
         $directories = [];
         foreach ($types as $type) {
-            $directories = $this->types[$type] ?? null;
+            $directories[$type] = $this->types[$type] ?? null;
         }
 
         return $keepMissing ? $directories : array_filter($directories);
@@ -168,6 +168,11 @@ class Flex implements \Countable
             $keyFieldFind = 'storage_key';
 
             foreach ($keys as $flexKey) {
+                if (!$flexKey) {
+                    continue;
+                }
+
+                $flexKey = (string)$flexKey;
                 // Normalize key and type using fallback to default type if it was set.
                 [$key, $type, $guess] = $this->resolveKeyAndType($flexKey, $defaultType);
 

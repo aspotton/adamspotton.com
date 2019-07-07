@@ -154,11 +154,20 @@ class Validation
 
     protected static function filterText($value, array $params, array $field)
     {
+        if (!\is_string($value) && !is_numeric($value)) {
+            return '';
+        }
+
         if (!empty($params['trim'])) {
             $value = trim($value);
         }
 
         return (string) $value;
+    }
+
+    protected static function filterCheckbox($value, array $params, array $field)
+    {
+        return (bool) $value;
     }
 
     protected static function filterCommaList($value, array $params, array $field)
@@ -565,6 +574,11 @@ class Validation
             if (isset($params['step']) && (\count($value) - $min) % $params['step'] === 0) {
                 return false;
             }
+        }
+
+        // If creating new values is allowed, no further checks are needed.
+        if (!empty($field['selectize']['create'])) {
+            return true;
         }
 
         $options = $field['options'] ?? [];

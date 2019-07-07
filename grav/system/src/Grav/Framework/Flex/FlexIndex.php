@@ -98,6 +98,16 @@ class FlexIndex extends ObjectIndex implements FlexCollectionInterface, FlexInde
         return $this->orderBy($orderings);
     }
 
+
+    /**
+     * {@inheritdoc}
+     * @see FlexCollectionInterface::filterBy()
+     */
+    public function filterBy(array $filters)
+    {
+        return $this->__call('filterBy', [$filters]);
+    }
+
     /**
      * {@inheritdoc}
      * @see FlexCollectionInterface::getFlexType()
@@ -302,9 +312,10 @@ class FlexIndex extends ObjectIndex implements FlexCollectionInterface, FlexInde
         // Ordering can be done by using index only.
         $previous = null;
         foreach (array_reverse($orderings) as $field => $ordering) {
+            $field = (string)$field;
             if ($this->getKeyField() === $field) {
                 $keys = $this->getKeys();
-                $search = array_combine($keys, $keys);
+                $search = array_combine($keys, $keys) ?: [];
             } elseif ($field === 'flex_key') {
                 $search = $this->getFlexKeys();
             } else {
@@ -386,10 +397,6 @@ class FlexIndex extends ObjectIndex implements FlexCollectionInterface, FlexInde
                         $cached = $result;
                     }
 
-                    if ($cached === null) {
-                        throw new \RuntimeException('Flex: Internal error');
-                    }
-
                     $cache->set($key, $cached);
                 } catch (InvalidArgumentException $e) {
                     $debugger->addException($e);
@@ -456,7 +463,7 @@ class FlexIndex extends ObjectIndex implements FlexCollectionInterface, FlexInde
             $first = reset($entries);
             if ($first) {
                 $keys = array_keys($first);
-                $keys = array_combine($keys, $keys);
+                $keys = array_combine($keys, $keys) ?: [];
             } else {
                 $keys = [];
             }

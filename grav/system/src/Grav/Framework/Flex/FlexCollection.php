@@ -9,6 +9,7 @@
 
 namespace Grav\Framework\Flex;
 
+use Doctrine\Common\Collections\Collection;
 use Doctrine\Common\Collections\Criteria;
 use Grav\Common\Debugger;
 use Grav\Common\Grav;
@@ -121,6 +122,22 @@ class FlexCollection extends ObjectCollection implements FlexCollectionInterface
         $matching = $this->matching($criteria);
 
         return $matching;
+    }
+
+    /**
+     * @param array $filters
+     * @return FlexCollectionInterface|Collection
+     */
+    public function filterBy(array $filters)
+    {
+        $expr = Criteria::expr();
+        $criteria = Criteria::create();
+
+        foreach ($filters as $key => $value) {
+            $criteria->andWhere($expr->eq($key, $value));
+        }
+
+        return $this->matching($criteria);
     }
 
     /**
@@ -301,7 +318,7 @@ class FlexCollection extends ObjectCollection implements FlexCollectionInterface
             ]));
 
             $output = $this->getTemplate($layout)->render(
-                ['grav' => $grav, 'block' => $block, 'collection' => $this, 'layout' => $layout] + $context
+                ['grav' => $grav, 'config' => $grav['config'], 'block' => $block, 'collection' => $this, 'layout' => $layout] + $context
             );
 
             if ($debugger->enabled()) {
@@ -474,7 +491,12 @@ class FlexCollection extends ObjectCollection implements FlexCollectionInterface
         $twig = $grav['twig'];
 
         try {
-            return $twig->twig()->resolveTemplate(["flex-objects/layouts/{$this->getFlexType()}/collection/{$layout}.html.twig"]);
+            return $twig->twig()->resolveTemplate(
+                [
+                    "flex-objects/layouts/{$this->getFlexType()}/collection/{$layout}.html.twig",
+                    "flex-objects/layouts/_default/collection/{$layout}.html.twig"
+                ]
+            );
         } catch (LoaderError $e) {
             /** @var Debugger $debugger */
             $debugger = Grav::instance()['debugger'];
