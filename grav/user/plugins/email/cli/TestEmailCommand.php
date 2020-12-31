@@ -2,6 +2,7 @@
 namespace Grav\Plugin\Console;
 
 use Grav\Common\Grav;
+use Grav\Common\Data\Data;
 use Grav\Console\ConsoleCommand;
 use Grav\Plugin\Email\Email;
 use Grav\Plugin\Email\Utils as EmailUtils;
@@ -59,17 +60,27 @@ class TestEmailCommand extends ConsoleCommand
      */
     protected function serve()
     {
+        // TODO: remove when requiring Grav 1.7+
+        if (method_exists($this, 'initializeGrav')) {
+            $this->initializeThemes();
+        }
+
         $grav = Grav::instance();
 
         $this->output->writeln('');
         $this->output->writeln('<yellow>Current Configuration:</yellow>');
         $this->output->writeln('');
 
-        dump($grav['config']->get('plugins.email'));
+        $email_config = new Data($grav['config']->get('plugins.email'));
+        if ($email_config->get('mailer.smtp.password')) {
+            $password = $email_config->get('mailer.smtp.password');
+            $obfuscated_password = str_repeat('*', strlen($password) - 2) . substr($password, -2);
+            $email_config->set('mailer.smtp.password', $obfuscated_password);
+        }
+
+        dump($email_config);
 
         $this->output->writeln('');
-
-        require_once __DIR__ . '/../vendor/autoload.php';
 
         $grav['Email'] = new Email();
 
@@ -82,12 +93,10 @@ class TestEmailCommand extends ConsoleCommand
         }
 
         if (!$body) {
-            $configuration = print_r($grav['config']->get('plugins.email'), true);
+            $configuration = print_r($email_config, true);
             $body = $grav['language']->translate(['PLUGIN_EMAIL.TEST_EMAIL_BODY', $configuration]);
         }
 
-        // This is the old way....
-        // $sent = EmailUtils::sendEmail($subject, $body, $email_to);
         $sent = EmailUtils::sendEmail(['subject'=>$subject, 'body'=>$body, 'to'=>$to]);
 
         if ($sent) {

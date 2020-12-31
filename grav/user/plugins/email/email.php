@@ -1,7 +1,7 @@
 <?php
 namespace Grav\Plugin;
 
-use Grav\Common\Grav;
+use Grav\Common\Data\Data;
 use Grav\Common\Plugin;
 use Grav\Plugin\Email\Email;
 use RocketTheme\Toolbox\Event\Event;
@@ -23,6 +23,7 @@ class EmailPlugin extends Plugin
             'onFormProcessed'           => ['onFormProcessed', 0],
             'onTwigTemplatePaths'       => ['onTwigTemplatePaths', 0],
             'onSchedulerInitialized'    => ['onSchedulerInitialized', 0],
+            'onAdminSave'               => ['onAdminSave', 0],
         ];
     }
 
@@ -47,6 +48,28 @@ class EmailPlugin extends Plugin
     {
         $twig = $this->grav['twig'];
         $twig->twig_paths[] = __DIR__ . '/templates';
+    }
+
+    /**
+     * Force compile during save if admin plugin save
+     *
+     * @param Event $event
+     */
+    public function onAdminSave(Event $event)
+    {
+        /** @var Data $obj */
+        $obj = $event['object'];
+
+
+
+        if ($obj instanceof Data && $obj->blueprints()->getFilename() === 'email/blueprints') {
+            $current_pw = $this->grav['config']->get('plugins.email.mailer.smtp.password');
+            $new_pw = $obj->get('mailer.smtp.password');
+            if (!empty($current_pw) && empty($new_pw)) {
+                $obj->set('mailer.smtp.password', $current_pw);
+            }
+
+        }
     }
 
     /**
@@ -76,36 +99,16 @@ class EmailPlugin extends Plugin
                 $form->legacyUploads();
                 $form->copyFiles();
 
-                $grav = Grav::instance();
-                $grav->fireEvent('onEmailSend', new Event(['params' => &$params, 'vars' => &$vars]));
+                $this->grav->fireEvent('onEmailSend', new Event(['params' => &$params, 'vars' => &$vars]));
 
-                // Build message
-                $message = $this->email->buildMessage($params, $vars);
-
-                if (isset($params['attachments'])) {
-                    $filesToAttach = (array)$params['attachments'];
-                    if ($filesToAttach) foreach ($filesToAttach as $fileToAttach) {
-                        $filesValues = $form->value($fileToAttach);
-
-                        if ($filesValues) foreach($filesValues as $fileValues) {
-                            if (isset($fileValues['file'])) {
-                                $filename = $fileValues['file'];
-                            } else {
-                                $filename = ROOT_DIR . $fileValues['path'];
-                            }
-
-                            try {
-                                $message->attach(\Swift_Attachment::fromPath($filename));
-                            } catch (\Exception $e) {
-                                // Log any issues
-                                $grav['log']->error($e->getMessage());
-                            }
-                        }
+                if ($this->isAssocArray($params)) {
+                    $this->sendFormEmail($form, $params, $vars);
+                } else {
+                    foreach ($params as $email) {
+                        $this->sendFormEmail($form, $email, $vars);
                     }
                 }
 
-                // Send e-mail
-                $this->email->send($message);
                 break;
         }
     }
@@ -127,6 +130,45 @@ class EmailPlugin extends Plugin
             $job->output($logs);
             $job->backlink('/plugins/email');
         }
+    }
+
+    protected function sendFormEmail($form, $params, $vars)
+    {
+        // Build message
+        $message = $this->email->buildMessage($params, $vars);
+
+        if (isset($params['attachments'])) {
+            $filesToAttach = (array)$params['attachments'];
+            if ($filesToAttach) foreach ($filesToAttach as $fileToAttach) {
+                $filesValues = $form->value($fileToAttach);
+
+                if ($filesValues) foreach($filesValues as $fileValues) {
+                    if (isset($fileValues['file'])) {
+                        $filename = $fileValues['file'];
+                    } else {
+                        $filename = ROOT_DIR . $fileValues['path'];
+                    }
+
+                    try {
+                        $message->attach(\Swift_Attachment::fromPath($filename));
+                    } catch (\Exception $e) {
+                        // Log any issues
+                        $this->grav['log']->error($e->getMessage());
+                    }
+                }
+            }
+        }
+
+        // Send e-mail
+        $this->email->send($message);
+    }
+
+    protected function isAssocArray(array $arr)
+    {
+        if (array() === $arr) return false;
+        $keys = array_keys($arr);
+        $index_keys = range(0, count($arr) - 1);
+        return $keys !== $index_keys;
     }
 
 }
